@@ -1,0 +1,121 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id           String         @id @default(uuid())
+  name         String
+  email        String         @unique
+  password     String
+  role         String         // ADMIN, STUDENT, CITIZEN, RESEARCHER, JOURNALIST, EXAM_ASPIRANT, USER
+  streakCount  Int            @default(0)
+  lastActive   DateTime?
+  progress     UserProgress[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model Country {
+  id                  String          @id @default(uuid())
+  name                String          @unique // India, United States, etc.
+  code                String          @unique // IN, US, UK, FR, JP
+  flagUrl             String          // SVG or Emoji or Image URL
+  overview            String          // markdown summary of constitution
+  governmentStructure String          // markdown summary of gov structure
+  fundamentalRights   String          // markdown summary of fundamental rights
+  history             String          // markdown constitutional history
+  articles            Article[]
+  amendments          Amendment[]
+  quizzes             QuizQuestion[]
+  userProgress        UserProgress[]
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+}
+
+model Article {
+  id                       String         @id @default(uuid())
+  countryId                String
+  country                  Country        @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  articleNumber            String         // e.g. "Article 21", "First Amendment" (sometimes article or amendment)
+  title                    String
+  originalText             String
+  simplifiedExplanation    String
+  childFriendlyExplanation String
+  realLifeExample          String
+  keyTakeaways             String         // newline separated list
+  topic                    String         // Fundamental Rights, Freedom of Speech, Federalism, etc.
+  userProgress             UserProgress[]
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @updatedAt
+
+  @@unique([countryId, articleNumber])
+}
+
+model Amendment {
+  id          String   @id @default(uuid())
+  countryId   String
+  country     Country  @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  title       String   // e.g. "First Amendment", "42nd Amendment"
+  year        String   // e.g. "1791", "1976"
+  description String
+  detail      String   // simplified details
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model QuizQuestion {
+  id            String   @id @default(uuid())
+  countryId     String
+  country       Country  @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  topic         String   // Fundamental Rights, Freedom of Speech, etc.
+  type          String   // MCQ, TF, BLANK, SCENARIO
+  difficulty    String   // EASY, MEDIUM, HARD
+  question      String
+  options       String   // JSON string array e.g. ["A", "B", "C", "D"]
+  correctAnswer String   // correct option or True/False or blank answer
+  explanation   String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model UserProgress {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  countryId   String
+  country     Country  @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  articleId   String?
+  article     Article? @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  quizScore   Int?
+  completedAt DateTime @default(now())
+}
+
+model LearningLesson {
+  id          String   @id @default(uuid())
+  roleTarget  String   // STUDENT, CITIZEN, RESEARCHER, JOURNALIST, EXAM_ASPIRANT
+  dayNumber   Int
+  title       String
+  content     String   // markdown content
+  quizId      String?  // linked quiz (optional)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([roleTarget, dayNumber])
+}
+
+model PromptConfig {
+  id           String   @id @default(uuid())
+  name         String   @unique // chat, simplified, child, quiz, mindmap
+  systemPrompt String
+  temperature  Float    @default(0.7)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
