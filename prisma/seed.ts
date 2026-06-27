@@ -3,7 +3,7 @@ import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import * as bcrypt from 'bcryptjs';
 
 const adapter = new PrismaBetterSqlite3({
-  url: 'dev.db'
+  url: 'prisma/dev.db'
 });
 const prisma = new PrismaClient({ adapter });
 
